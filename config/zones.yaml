@@ -1,0 +1,38 @@
+# RetailEdge Sentinel - Zone Definitions
+# Coordinates based on reference 640x480 resolution (or relative coordinates)
+zones:
+  entrance:
+    id: "ENTRANCE"
+    name: "Store Entrance & Foyer"
+    type: "entry"
+    color: [46, 204, 113]       # Emerald Green [R, G, B]
+    polygon:
+      - [20, 30]
+      - [260, 30]
+      - [260, 220]
+      - [20, 220]
+    entry_line:
+      start: [20, 190]
+      end: [260, 190]
+
+  shelf:
+    id: "SHELF"
+    name: "Merchandise & Shelf Aisle"
+    type: "browsing"
+    color: [243, 156, 18]       # Amber / Orange [R, G, B]
+    polygon:
+      - [320, 30]
+      - [620, 30]
+      - [620, 230]
+      - [320, 230]
+
+  billing:
+    id: "BILLING"
+    name: "Billing Counter & Queue"
+    type: "checkout"
+    color: [231, 76, 60]        # Coral Red [R, G, B]
+    polygon:
+      - [220, 270]
+      - [620, 270]
+      - [620, 460]
+      - [220, 460]

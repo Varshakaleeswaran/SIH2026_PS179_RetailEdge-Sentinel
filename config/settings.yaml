@@ -1,0 +1,99 @@
+# RetailEdge Sentinel - Core System Configuration
+project:
+  name: "RetailEdge Sentinel"
+  tagline: "CAMERA -> DETECT -> ANALYSE -> ALERT -> ACTION"
+  team: "VENSMOLD AI"
+  problem_statement_id: "SIH26179"
+  version: "1.0.0-MVP"
+
+deployment:
+  mode: "local_simulation"           # local_simulation | qualcomm_edge_target
+  current_env: "Windows 11 Laptop / Local Edge Simulation"
+  target_platform: "Qualcomm Dragonwing Edge AI"
+  target_runtime: "Qualcomm AI Runtime (QAIRT / QNN / SNPE)"
+  model_toolchain: "Qualcomm AI Hub / AIMET Model Optimization"
+  inference_engine: "LocalInferenceEngine" # Switches to QualcommInferenceEngine on target hardware
+
+video:
+  source: "videos/store_aisle.mp4"  # Default recorded retail CCTV dataset
+  dataset_videos:
+    store_aisle: "videos/store_aisle.mp4"
+    people_movement: "videos/people_cctv.mp4"
+    entrance_footfall: "videos/entrance_footfall.mp4"
+    synthetic_store: "videos/sample_store.mp4"
+  width: 640
+  height: 480
+  target_fps: 25
+
+model:
+  model_type: "yolov8n"
+  weights_path: "models/yolov8n.pt"
+  confidence_threshold: 0.35
+  target_classes: [0]                # 0 = person in COCO dataset
+  iou_threshold: 0.45
+
+tracking:
+  tracker_type: "bytetrack"
+  track_high_thresh: 0.35
+  track_low_thresh: 0.1
+  new_track_thresh: 0.4
+  track_buffer: 30
+  match_thresh: 0.8
+
+adaptive_inference:
+  enabled: true
+  low_activity_skip: 3               # Process every 3rd frame when activity is low
+  high_activity_skip: 1              # Process every frame when activity is high
+  occupancy_threshold: 4
+
+shopper_intelligence:
+  traffic_thresholds:
+    low: 4
+    medium: 8
+    high: 12
+  entry_line_direction: "down"       # Shoppers moving down cross entry line
+
+queue_intelligence:
+  thresholds:
+    low: 2
+    medium: 5
+    high: 8
+  default_service_rate: 1.5          # Customers serviced per minute estimation
+  growth_window_frames: 45           # Window to calculate queue growth rate
+
+inventory_intelligence:
+  prototype_mode: true
+  estimation_method: "Zone activity & configurable demo states"
+  shelves:
+    - id: "SHELF_A"
+      name: "Fresh Produce / Beverages"
+      default_status: "AVAILABLE"
+    - id: "SHELF_B"
+      name: "Snacks & Packaged Goods"
+      default_status: "LOW"
+    - id: "SHELF_C"
+      name: "Personal Care & Household"
+      default_status: "AVAILABLE"
+
+risk_engine:
+  weights:
+    queue: 0.45
+    inventory: 0.30
+    traffic: 0.25
+  thresholds:
+    low: 30
+    medium: 60
+    high: 80
+
+privacy:
+  facial_recognition_enabled: false
+  store_raw_video: false
+  store_biometric_data: false
+  local_processing_only: true
+  anonymous_tracking_only: true
+  cloud_sync: "DISABLED"
+
+storage:
+  db_path: "data/retail_edge.db"
+  log_events_to_db: true
+  event_retention_days: 7

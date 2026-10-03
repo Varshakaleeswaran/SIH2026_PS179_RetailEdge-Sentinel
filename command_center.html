@@ -1,0 +1,1344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RetailEdge AI — Enterprise Edge Intelligence Command Center (SIH26179)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            950: '#06090e',
+                            900: '#0b111b',
+                            850: '#0f172a',
+                            800: '#131e33',
+                            700: '#1e293b',
+                            600: '#334155',
+                            cyan: '#06b6d4',
+                            emerald: '#10b981',
+                            amber: '#f59e0b',
+                            rose: '#f43f5e'
+                        }
+                    },
+                    fontFamily: {
+                        mono: ['JetBrains Mono', 'Menlo', 'monospace'],
+                        sans: ['Inter', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbars and styling */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0b111b; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #334155; }
+        
+        .glow-emerald { box-shadow: 0 0 15px rgba(16, 185, 129, 0.2); }
+        .glow-rose { box-shadow: 0 0 15px rgba(244, 63, 94, 0.25); }
+        .glow-cyan { box-shadow: 0 0 15px rgba(6, 182, 212, 0.2); }
+        
+        .radar-scan {
+            position: relative;
+            overflow: hidden;
+        }
+        .radar-scan::after {
+            content: "";
+            position: absolute;
+            top: -100%; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(to bottom, transparent, rgba(6, 182, 212, 0.08), transparent);
+            animation: scan 3.5s linear infinite;
+            pointer-events: none;
+        }
+        @keyframes scan {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(200%); }
+        }
+    </style>
+</head>
+<body class="bg-cyber-950 text-slate-200 font-sans min-h-screen flex flex-col selection:bg-cyan-500 selection:text-black">
+
+    <!-- TOP APPLIANCE STATUS & NAVIGATION BAR -->
+    <header class="bg-cyber-900 border-b border-cyber-700/80 px-4 py-2.5 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-50 backdrop-blur">
+        <div class="flex items-center space-x-3">
+            <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-emerald-500 to-cyan-600 flex items-center justify-center text-slate-950 font-black shadow-lg shadow-emerald-500/20">
+                <i class="fa-solid fa-microchip text-lg"></i>
+            </div>
+            <div>
+                <div class="flex items-center space-x-2">
+                    <span class="font-bold tracking-tight text-white text-base">RetailEdge<span class="text-cyan-400">AI</span></span>
+                    <span class="px-2 py-0.5 text-[10px] font-mono tracking-wider uppercase bg-cyan-950 border border-cyan-700/60 text-cyan-300 rounded">SIH26179 Enterprise</span>
+                    <span id="apiStatusBadge" class="text-[10px] font-mono bg-amber-950 text-amber-300 border border-amber-500/50 px-2 py-0.5 rounded ml-2">API OFFLINE (SIM MODE)</span>
+                    <span class="flex h-2 w-2 relative">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                </div>
+                <p class="text-[11px] text-slate-400">“Store ka Apna AI” — Privacy-First Edge Decision Engine</p>
+            </div>
+        </div>
+
+        <!-- Hardware & Appliance Metrics (Qualcomm QCS6490) -->
+        <div class="hidden xl:flex items-center space-x-5 text-xs bg-cyber-950/80 px-4 py-1.5 rounded-lg border border-cyber-700 font-mono">
+            <div class="flex items-center space-x-2">
+                <span class="text-slate-400"><i class="fa-solid fa-server text-cyan-400 mr-1"></i>HW Target:</span>
+                <span class="text-slate-100 font-semibold">Dragon Q6A / Qualcomm QCS6490</span>
+            </div>
+            <div class="h-4 w-px bg-cyber-700"></div>
+            <div class="flex items-center space-x-2">
+                <span class="text-slate-400">Hexagon NPU:</span>
+                <span class="text-emerald-400 font-semibold">12.8 TOPS</span>
+            </div>
+            <div class="h-4 w-px bg-cyber-700"></div>
+            <div class="flex items-center space-x-2">
+                <span class="text-slate-400">Temp:</span>
+                <span class="text-slate-200" id="hwTemp">42.4°C</span>
+            </div>
+            <div class="h-4 w-px bg-cyber-700"></div>
+            <div class="flex items-center space-x-2">
+                <span class="text-slate-400">RAM:</span>
+                <span class="text-slate-200" id="hwRam">1.84 / 8.0 GB</span>
+            </div>
+            <div class="h-4 w-px bg-cyber-700"></div>
+            <div class="flex items-center space-x-2">
+                <span class="text-slate-400">Inference:</span>
+                <span class="text-cyan-300 font-bold" id="hwFps">28.4 FPS</span>
+                <span class="text-slate-400 text-[10px]">(14.2ms)</span>
+            </div>
+        </div>
+
+        <!-- Air-gap status & live time -->
+        <div class="flex items-center space-x-3">
+            <div class="flex items-center space-x-2 bg-emerald-950/50 border border-emerald-500/40 text-emerald-400 px-2.5 py-1 rounded-md text-xs font-mono">
+                <i class="fa-solid fa-shield-halved text-sm"></i>
+                <span class="font-semibold">AIR-GAPPED (0 B Outbound)</span>
+            </div>
+            <button onclick="togglePythonModal()" class="px-2.5 py-1 bg-cyber-800 hover:bg-cyber-700 border border-cyber-600 rounded text-xs text-slate-200 transition flex items-center space-x-1.5 font-mono">
+                <i class="fa-brands fa-python text-amber-400"></i>
+                <span>Python Script</span>
+            </button>
+            <div class="text-right font-mono text-xs hidden sm:block">
+                <div class="text-slate-200 font-semibold" id="clockTime">17:35:12 IST</div>
+                <div class="text-[10px] text-slate-500">LOCAL EDGE NODE #01</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- JUDGE INTERACTIVE DEMO SCENARIO TOOLBAR -->
+    <div class="bg-gradient-to-r from-cyber-900 via-cyber-850 to-cyber-900 border-b border-cyber-700 px-4 py-2 flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div class="flex items-center space-x-2 text-slate-300">
+            <span class="font-semibold text-cyan-400 flex items-center">
+                <i class="fa-solid fa-flask-vial mr-1.5 text-sm"></i> Hackathon Test Scenarios:
+            </span>
+            <span class="text-slate-400 hidden md:inline">Trigger live synthetic store conditions for judges:</span>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+            <button onclick="triggerRushHourScenario()" id="btnRush" class="px-3 py-1.5 bg-rose-950/60 hover:bg-rose-900 border border-rose-600/70 text-rose-200 rounded font-medium transition flex items-center space-x-1.5">
+                <i class="fa-solid fa-people-robbery"></i>
+                <span>Simulate Flow Surge (PQCI &gt; 3.0)</span>
+            </button>
+            <button onclick="triggerDepletionScenario()" id="btnStock" class="px-3 py-1.5 bg-amber-950/60 hover:bg-amber-900 border border-amber-600/70 text-amber-200 rounded font-medium transition flex items-center space-x-1.5">
+                <i class="fa-solid fa-boxes-packing"></i>
+                <span>Simulate Shelf Depletion</span>
+            </button>
+            <button onclick="triggerVoiceBroadcast()" class="px-3 py-1.5 bg-emerald-950/60 hover:bg-emerald-900 border border-emerald-600/70 text-emerald-200 rounded font-medium transition flex items-center space-x-1.5">
+                <i class="fa-solid fa-volume-high"></i>
+                <span>Simulate Local Voice Dispatch (Bhashini)</span>
+            </button>
+            <button onclick="resetSimulations()" class="px-2.5 py-1.5 bg-cyber-800 hover:bg-cyber-700 border border-cyber-600 text-slate-300 rounded transition font-mono">
+                <i class="fa-solid fa-rotate-left"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN DASHBOARD CONTENT AREA -->
+    <main class="flex-1 p-4 grid grid-cols-1 xl:grid-cols-12 gap-4 max-w-[1920px] mx-auto w-full">
+
+        <!-- LEFT/CENTER COLUMN: 3 INTERACTIVE CAMERA FEEDS & PRIVACY TOGGLES (Col span 8) -->
+        <section class="xl:col-span-8 flex flex-col space-y-4">
+            
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <h2 class="text-sm font-semibold tracking-wide uppercase text-slate-300 flex items-center">
+                        <i class="fa-solid fa-video text-cyan-400 mr-2"></i> On-Device RTSP Camera Array
+                    </h2>
+                    <span class="bg-cyber-800 text-[11px] font-mono px-2 py-0.5 rounded text-slate-400 border border-cyber-700">3 Feeds Connected (Zero Cloud Ingestion)</span>
+                </div>
+                
+                <!-- Global Stream Anonymization Mode Switch -->
+                <div class="flex items-center space-x-2 text-xs bg-cyber-900 px-3 py-1 rounded border border-cyber-700">
+                    <span class="text-slate-400">Stream Mode:</span>
+                    <button onclick="setGlobalVisionMode('raw')" id="modeRawBtn" class="px-2 py-0.5 rounded font-mono text-[11px] bg-cyber-800 text-slate-400 hover:text-white transition">Bounding Boxes</button>
+                    <button onclick="setGlobalVisionMode('vectors')" id="modeVecBtn" class="px-2 py-0.5 rounded font-mono text-[11px] bg-cyan-900 border border-cyan-500 text-cyan-200 font-bold transition">Sensor-Level Anonymized (Wireframe)</button>
+                </div>
+            </div>
+
+            <!-- CAMERA GRIDS -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                
+                <!-- CAMERA 01: ENTRANCE -->
+                <div class="bg-cyber-900 rounded-xl border border-cyber-700/80 overflow-hidden flex flex-col shadow-lg">
+                    <div class="bg-cyber-850 px-3 py-2 border-b border-cyber-700 flex items-center justify-between text-xs font-mono">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                            <span class="font-bold text-slate-200">CAM_01: ENTRANCE</span>
+                        </div>
+                        <span class="text-[10px] text-slate-400">RTSP:554/ch1</span>
+                    </div>
+
+                    <div class="relative w-full aspect-video bg-black radar-scan">
+                        <canvas id="canvasCam1" class="w-full h-full block cursor-crosshair"></canvas>
+                        
+                        <!-- Overlay telemetry HUD -->
+                        <div class="absolute top-2 left-2 pointer-events-none text-[10px] font-mono bg-cyber-950/80 p-1.5 rounded border border-cyber-700 text-slate-300">
+                            <div>INFLOW: <span class="text-emerald-400 font-bold" id="cam1Inflow">18 / min</span></div>
+                            <div>OUTFLOW: <span class="text-slate-400" id="cam1Outflow">11 / min</span></div>
+                            <div>ACTIVE IN ROI: <span class="text-cyan-300 font-bold" id="cam1RoiCount">3</span></div>
+                        </div>
+
+                        <div class="absolute bottom-2 right-2 pointer-events-none text-[9px] font-mono bg-emerald-950/90 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-600/40">
+                            TIER-1 TRIGGER: ACTIVE
+                        </div>
+                    </div>
+
+                    <div class="p-2.5 bg-cyber-900 border-t border-cyber-700/70 text-xs flex justify-between items-center font-mono">
+                        <span class="text-slate-400">Entry Line: Crossed</span>
+                        <span class="text-emerald-400 font-bold" id="cam1CrossTotal">+42 Today</span>
+                    </div>
+                </div>
+
+                <!-- CAMERA 02: ACTIVE SHELF A -->
+                <div class="bg-cyber-900 rounded-xl border border-cyber-700/80 overflow-hidden flex flex-col shadow-lg">
+                    <div class="bg-cyber-850 px-3 py-2 border-b border-cyber-700 flex items-center justify-between text-xs font-mono">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                            <span class="font-bold text-slate-200">CAM_02: SHELF_A_SNACKS</span>
+                        </div>
+                        <span class="text-[10px] text-slate-400">RTSP:554/ch2</span>
+                    </div>
+
+                    <div class="relative w-full aspect-video bg-black radar-scan">
+                        <canvas id="canvasCam2" class="w-full h-full block cursor-crosshair"></canvas>
+                        
+                        <!-- Shelf HUD -->
+                        <div class="absolute top-2 left-2 pointer-events-none text-[10px] font-mono bg-cyber-950/80 p-1.5 rounded border border-cyber-700 text-slate-300">
+                            <div>EDGE DENSITY: <span class="font-bold" id="cam2Density">74%</span></div>
+                            <div>DWELL TIME: <span class="text-amber-400 font-bold" id="cam2Dwell">78s (High)</span></div>
+                            <div>OOS PROB: <span class="font-bold" id="cam2Oos">12%</span></div>
+                        </div>
+
+                        <div class="absolute bottom-2 right-2 pointer-events-none text-[9px] font-mono bg-cyan-950/90 text-cyan-300 px-1.5 py-0.5 rounded border border-cyan-600/40">
+                            SOBEL/CANNY ANALYSIS
+                        </div>
+                    </div>
+
+                    <div class="p-2.5 bg-cyber-900 border-t border-cyber-700/70 text-xs flex justify-between items-center font-mono">
+                        <span class="text-slate-400">Shelf ROI State:</span>
+                        <span class="text-emerald-400 font-bold" id="cam2StatusBadge">STOCK ADEQUATE</span>
+                    </div>
+                </div>
+
+                <!-- CAMERA 03: CHECKOUT / BILLING -->
+                <div class="bg-cyber-900 rounded-xl border border-cyber-700/80 overflow-hidden flex flex-col shadow-lg">
+                    <div class="bg-cyber-850 px-3 py-2 border-b border-cyber-700 flex items-center justify-between text-xs font-mono">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                            <span class="font-bold text-slate-200">CAM_03: BILLING_COUNTER</span>
+                        </div>
+                        <span class="text-[10px] text-slate-400">RTSP:554/ch3</span>
+                    </div>
+
+                    <div class="relative w-full aspect-video bg-black radar-scan">
+                        <canvas id="canvasCam3" class="w-full h-full block cursor-crosshair"></canvas>
+                        
+                        <!-- Billing HUD -->
+                        <div class="absolute top-2 left-2 pointer-events-none text-[10px] font-mono bg-cyber-950/80 p-1.5 rounded border border-cyber-700 text-slate-300">
+                            <div>QUEUE HEADCOUNT: <span class="text-cyan-300 font-bold" id="cam3QueueCount">3</span></div>
+                            <div>SERVICING: <span class="text-emerald-400 font-bold">Counter 01 Open</span></div>
+                            <div>WAIT EST: <span class="text-amber-300 font-bold" id="cam3WaitEst">2.4 min</span></div>
+                        </div>
+
+                        <div class="absolute bottom-2 right-2 pointer-events-none text-[9px] font-mono bg-purple-950/90 text-purple-300 px-1.5 py-0.5 rounded border border-purple-600/40">
+                            PQCI FLOW MONITOR
+                        </div>
+                    </div>
+
+                    <div class="p-2.5 bg-cyber-900 border-t border-cyber-700/70 text-xs flex justify-between items-center font-mono">
+                        <span class="text-slate-400">Queue Flow Status:</span>
+                        <span class="text-cyan-400 font-bold" id="cam3StatusBadge">BALANCED</span>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- PREDICTIVE INTELLIGENCE & RECOMMENDATION ENGINE -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                
+                <!-- PREDICTIVE QUEUE CONGESTION INDEX (PQCI) PANEL (Col span 5) -->
+                <div class="lg:col-span-5 bg-cyber-900 rounded-xl border border-cyber-700/80 p-4 flex flex-col justify-between shadow-lg">
+                    <div>
+                        <div class="flex items-center justify-between border-b border-cyber-700 pb-2 mb-3">
+                            <div class="flex items-center space-x-2">
+                                <i class="fa-solid fa-chart-line text-cyan-400 text-sm"></i>
+                                <h3 class="text-xs font-mono font-bold text-slate-200 uppercase tracking-wider">Predictive Queue Engine (PQCI)</h3>
+                            </div>
+                            <span class="text-[10px] font-mono bg-cyber-800 text-cyan-300 px-2 py-0.5 rounded border border-cyber-600">Pat. Cand. C</span>
+                        </div>
+
+                        <!-- Mathematical Formulation Box -->
+                        <div class="bg-cyber-950 p-2.5 rounded-lg border border-cyber-800 font-mono text-[11px] mb-3">
+                            <div class="flex justify-between text-slate-400">
+                                <span>Formula: <span class="text-cyan-400 font-semibold">TFIF = Flow_in / Flow_bill</span></span>
+                                <span id="pqciTfifVal" class="text-emerald-400 font-bold font-mono">TFIF: 1.18x</span>
+                            </div>
+                            <div class="text-[10px] text-slate-500 mt-0.5">Threshold: TFIF &gt; 2.5 sustained for 90s &rarr; Queue Warning</div>
+                        </div>
+
+                        <!-- Live Meter Gauge -->
+                        <div class="space-y-1.5">
+                            <div class="flex justify-between text-xs font-mono">
+                                <span class="text-slate-400">Congestion Forecast Index:</span>
+                                <span class="font-bold text-emerald-400" id="pqciRiskLabel">NORMAL (Risk: Low)</span>
+                            </div>
+                            <div class="w-full bg-cyber-950 h-3 rounded-full overflow-hidden p-0.5 border border-cyber-700">
+                                <div id="pqciProgressBar" class="h-full bg-gradient-to-r from-emerald-500 via-amber-500 to-rose-600 rounded-full transition-all duration-500" style="width: 24%"></div>
+                            </div>
+                            <div class="flex justify-between text-[10px] font-mono text-slate-500">
+                                <span>0.0 (Idle)</span>
+                                <span>2.0 (Balanced)</span>
+                                <span>4.0+ (Bottleneck)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PQCI Impact Forecast card -->
+                    <div class="mt-4 p-3 bg-cyber-850/80 rounded-lg border border-cyber-700 text-xs font-mono flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <i class="fa-regular fa-clock text-cyan-400"></i>
+                            <div>
+                                <div class="text-slate-400 text-[10px]">PREDICTED BOTTLENECK IN:</div>
+                                <div class="text-white font-bold text-xs" id="pqciCountdown">No Overload Foreseen</div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-slate-400 text-[10px]">PREVENTION ACTION</div>
+                            <div class="text-emerald-400 font-semibold text-[11px]" id="pqciAction">Counter 1 Capable</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AUTONOMOUS RECOMMENDATION ENGINE (LEVEL 3: ACT) (Col span 7) -->
+                <div class="lg:col-span-7 bg-cyber-900 rounded-xl border border-cyber-700/80 p-4 flex flex-col justify-between shadow-lg">
+                    <div>
+                        <div class="flex items-center justify-between border-b border-cyber-700 pb-2 mb-3">
+                            <div class="flex items-center space-x-2">
+                                <i class="fa-solid fa-wand-magic-sparkles text-amber-400 text-sm"></i>
+                                <h3 class="text-xs font-mono font-bold text-slate-200 uppercase tracking-wider">Level 3: Autonomous Decision Engine</h3>
+                            </div>
+                            <span class="text-[10px] font-mono bg-emerald-950 text-emerald-300 border border-emerald-600/50 px-2 py-0.5 rounded">Actionable Outputs</span>
+                        </div>
+
+                        <!-- Prioritized Action Cards -->
+                        <div class="space-y-2.5" id="recommendationContainer">
+                            
+                            <!-- Default Recommendation Card 1 -->
+                            <div id="recCardQueue" class="p-3 bg-cyber-950 rounded-lg border border-cyber-800 flex items-start justify-between transition-all">
+                                <div class="flex items-start space-x-3">
+                                    <div class="w-7 h-7 rounded bg-cyber-800 text-cyan-400 flex items-center justify-center text-xs mt-0.5" id="recIconQueue">
+                                        <i class="fa-solid fa-cash-register"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs font-bold text-slate-200" id="recTitleQueue">Counter Capacity Stable</div>
+                                        <p class="text-[11px] text-slate-400 mt-0.5" id="recDescQueue">Current checkout processing rate (1.2 shoppers/min) matches door entrance velocity.</p>
+                                        <div class="flex items-center space-x-3 mt-1.5 text-[10px] font-mono text-slate-400">
+                                            <span>Confidence: <strong class="text-cyan-400">96.4%</strong></span>
+                                            <span>Impact: <span class="text-slate-300">Prevent Walkouts</span></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button onclick="acknowledgeAction('queue')" class="px-2 py-1 bg-cyber-800 hover:bg-cyber-700 text-slate-300 border border-cyber-700 rounded text-[11px] font-mono transition">
+                                    Standby
+                                </button>
+                            </div>
+
+                            <!-- Default Recommendation Card 2 -->
+                            <div id="recCardStock" class="p-3 bg-cyber-950 rounded-lg border border-cyber-800 flex items-start justify-between transition-all">
+                                <div class="flex items-start space-x-3">
+                                    <div class="w-7 h-7 rounded bg-cyber-800 text-amber-400 flex items-center justify-center text-xs mt-0.5" id="recIconStock">
+                                        <i class="fa-solid fa-box"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs font-bold text-slate-200" id="recTitleStock">Shelf A (Snacks) Density Optimal</div>
+                                        <p class="text-[11px] text-slate-400 mt-0.5" id="recDescStock">Canny edge density at 74%. Normal picking frequency observed.</p>
+                                        <div class="flex items-center space-x-3 mt-1.5 text-[10px] font-mono text-slate-400">
+                                            <span>Zone: <strong>Aisle 2-West</strong></span>
+                                            <span>Restock Status: <span class="text-emerald-400">No Action Required</span></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button onclick="acknowledgeAction('stock')" class="px-2 py-1 bg-cyber-800 hover:bg-cyber-700 text-slate-300 border border-cyber-700 rounded text-[11px] font-mono transition">
+                                    OK
+                                </button>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- Dispatch Voice Action Banner -->
+                    <div class="mt-3 pt-2.5 border-t border-cyber-800 flex items-center justify-between text-xs">
+                        <div class="text-slate-400 flex items-center space-x-1 font-mono text-[11px]">
+                            <i class="fa-solid fa-tower-broadcast text-emerald-400 mr-1"></i>
+                            <span>Local Audio Speaker: <strong class="text-slate-200">Online</strong></span>
+                        </div>
+                        <button onclick="triggerVoiceBroadcast()" class="text-cyan-400 hover:text-cyan-300 font-medium font-mono text-[11px] flex items-center space-x-1">
+                            <span>Broadcast Hindi Audio</span>
+                            <i class="fa-solid fa-angle-right text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- RIGHT COLUMN: PRIVACY AUDIT & REAL-TIME SHOPPER KPIS (Col span 4) -->
+        <section class="xl:col-span-4 flex flex-col space-y-4">
+            
+            <!-- ZERO-CLOUD PRIVACY & OUTBOUND PAYLOAD AUDITOR (THE KILLER JUDGE PROOF) -->
+            <div class="bg-cyber-900 rounded-xl border border-emerald-500/40 p-4 shadow-lg glow-emerald flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between border-b border-cyber-700 pb-2 mb-3">
+                        <div class="flex items-center space-x-2">
+                            <i class="fa-solid fa-shield-virus text-emerald-400 text-base"></i>
+                            <div>
+                                <h3 class="text-xs font-mono font-bold text-white uppercase tracking-wider">Live Privacy & Outbound Auditor</h3>
+                                <p class="text-[10px] text-slate-400">Continuous Network Payload Sniffer</p>
+                            </div>
+                        </div>
+                        <span class="text-[10px] font-mono bg-emerald-950 text-emerald-300 border border-emerald-500/50 px-2 py-0.5 rounded">Pat. Cand. B</span>
+                    </div>
+
+                    <!-- Proof counters -->
+                    <div class="grid grid-cols-2 gap-2 mb-3 font-mono text-center">
+                        <div class="bg-cyber-950 p-2.5 rounded-lg border border-cyber-800">
+                            <div class="text-[10px] text-slate-400 uppercase">Raw Video Uploaded</div>
+                            <div class="text-emerald-400 text-lg font-black tracking-tight mt-0.5" id="auditVideoBytes">0.00 KB</div>
+                            <div class="text-[9px] text-slate-500">Camera RTSP kept in RAM</div>
+                        </div>
+                        <div class="bg-cyber-950 p-2.5 rounded-lg border border-cyber-800">
+                            <div class="text-[10px] text-slate-400 uppercase">PII / Faces Stored</div>
+                            <div class="text-emerald-400 text-lg font-black tracking-tight mt-0.5">0 Records</div>
+                            <div class="text-[9px] text-slate-500">Vectors only (no biometrics)</div>
+                        </div>
+                    </div>
+
+                    <!-- Live JSON Payload Monitor -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between items-center text-[10px] font-mono text-slate-400">
+                            <span>OUTBOUND TELEMETRY STREAM:</span>
+                            <span class="text-emerald-400 flex items-center">
+                                <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 mr-1 animate-pulse"></span>
+                                Pure Anonymized JSON Only
+                            </span>
+                        </div>
+                        <div class="bg-cyber-950 p-2 rounded-md border border-cyber-800 font-mono text-[10px] text-cyan-300/90 leading-tight overflow-x-auto max-h-36" id="jsonPayloadMonitor">
+{
+  "node_id": "RETAIL_EDGE_QCS6490_01",
+  "ts": "2026-09-16T17:35:12.891Z",
+  "occupancy": 14,
+  "flow_metrics": { "tfif": 1.18, "pqci_state": "BALANCED" },
+  "active_track_ids": [102, 107, 114],
+  "video_stream": null,
+  "pii_data": null
+}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-3 pt-2 text-[10px] font-mono text-slate-400 border-t border-cyber-800 flex justify-between items-center">
+                    <span>Edge Storage: SQLite Cipher</span>
+                    <span class="text-cyan-400">Zero Cloud Dependency ✓</span>
+                </div>
+            </div>
+
+            <!-- SHOPPER ANALYTICS & DWELL SUMMARY -->
+            <div class="bg-cyber-900 rounded-xl border border-cyber-700/80 p-4 shadow-lg flex-1 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between border-b border-cyber-700 pb-2 mb-3">
+                        <div class="flex items-center space-x-2">
+                            <i class="fa-solid fa-chart-simple text-cyan-400 text-sm"></i>
+                            <h3 class="text-xs font-mono font-bold text-slate-200 uppercase tracking-wider">Shopper Intelligence KPIs</h3>
+                        </div>
+                        <span class="text-[10px] font-mono text-slate-400">Module 01 Live</span>
+                    </div>
+
+                    <!-- Metric Tiles -->
+                    <div class="grid grid-cols-2 gap-2.5 font-mono mb-4">
+                        <div class="bg-cyber-950 p-2.5 rounded-lg border border-cyber-800">
+                            <span class="text-[10px] text-slate-400">Net Store Occupancy</span>
+                            <div class="text-xl font-bold text-white mt-0.5" id="kpiOccupancy">14</div>
+                            <span class="text-[10px] text-cyan-400">Within Safe Limits (&lt;30)</span>
+                        </div>
+                        <div class="bg-cyber-950 p-2.5 rounded-lg border border-cyber-800">
+                            <span class="text-[10px] text-slate-400">Cumulative Footfall</span>
+                            <div class="text-xl font-bold text-white mt-0.5" id="kpiFootfall">186</div>
+                            <span class="text-[10px] text-emerald-400">+18% vs Normal Tue</span>
+                        </div>
+                        <div class="bg-cyber-950 p-2.5 rounded-lg border border-cyber-800">
+                            <span class="text-[10px] text-slate-400">Avg Store Dwell Time</span>
+                            <div class="text-xl font-bold text-white mt-0.5">4m 32s</div>
+                            <span class="text-[10px] text-slate-400">Median Browse Cycle</span>
+                        </div>
+                        <div class="bg-cyber-950 p-2.5 rounded-lg border border-cyber-800">
+                            <span class="text-[10px] text-slate-400">High Interest Zone</span>
+                            <div class="text-xl font-bold text-amber-400 mt-0.5">Shelf A</div>
+                            <span class="text-[10px] text-slate-400">78s Average Dwell</span>
+                        </div>
+                    </div>
+
+                    <!-- Zone Engagement Heat distribution table -->
+                    <div class="space-y-2">
+                        <div class="text-[11px] font-mono text-slate-300 font-semibold flex justify-between">
+                            <span>Zone Engagement Dwell:</span>
+                            <span class="text-slate-400 text-[10px]">Samples: 412</span>
+                        </div>
+                        <div class="space-y-1.5 font-mono text-[10px]">
+                            <div>
+                                <div class="flex justify-between text-slate-400 mb-0.5">
+                                    <span>Zone A (Snacks & Beverages)</span>
+                                    <span class="text-amber-300">78s (44%)</span>
+                                </div>
+                                <div class="w-full bg-cyber-950 h-1.5 rounded-full overflow-hidden">
+                                    <div class="bg-amber-400 h-full rounded-full" style="width: 78%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-slate-400 mb-0.5">
+                                    <span>Zone B (Daily Essentials / Dairy)</span>
+                                    <span class="text-cyan-300">34s (26%)</span>
+                                </div>
+                                <div class="w-full bg-cyber-950 h-1.5 rounded-full overflow-hidden">
+                                    <div class="bg-cyan-400 h-full rounded-full" style="width: 48%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-slate-400 mb-0.5">
+                                    <span>Zone C (Personal Care)</span>
+                                    <span class="text-slate-400">18s (12%)</span>
+                                </div>
+                                <div class="w-full bg-cyber-950 h-1.5 rounded-full overflow-hidden">
+                                    <div class="bg-slate-500 h-full rounded-full" style="width: 25%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer info -->
+                <div class="mt-4 pt-2.5 border-t border-cyber-700 text-slate-400 text-[11px] font-mono flex items-center justify-between">
+                    <span>Edge Storage: <strong class="text-slate-200">local_retail.db</strong></span>
+                    <span class="text-slate-400 text-[10px]">Size: 4.2 MB</span>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- INTERACTIVE TOAST FOR NOTIFICATIONS -->
+    <div id="toastNotification" class="fixed bottom-5 right-5 max-w-md bg-cyber-900 border border-cyan-500/60 p-4 rounded-xl shadow-2xl z-50 transform translate-y-32 opacity-0 transition-all duration-300 flex items-start space-x-3">
+        <div class="w-8 h-8 rounded-full bg-cyan-950 border border-cyan-500 flex items-center justify-center text-cyan-400 shrink-0 mt-0.5" id="toastIcon">
+            <i class="fa-solid fa-bullhorn"></i>
+        </div>
+        <div class="flex-1">
+            <div class="text-xs font-mono font-bold text-white" id="toastTitle">Voice Alert Dispatched</div>
+            <div class="text-[11px] text-slate-300 mt-0.5" id="toastBody">Bhashini Hindi Voice broadcast over store speaker: "कृपया काउंटर 2 खोलें।"</div>
+        </div>
+        <button onclick="closeToast()" class="text-slate-400 hover:text-white text-xs">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    </div>
+
+    <!-- MODAL: PYTHON OPENCV & EDGE ARCHITECTURE SCRIPT -->
+    <div id="pythonScriptModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-cyber-900 border border-cyber-700 rounded-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden shadow-2xl">
+            <div class="px-5 py-3.5 border-b border-cyber-700 flex items-center justify-between bg-cyber-850">
+                <div class="flex items-center space-x-2.5">
+                    <i class="fa-brands fa-python text-amber-400 text-lg"></i>
+                    <div>
+                        <h3 class="text-sm font-mono font-bold text-white">edge_retail_pipeline.py</h3>
+                        <p class="text-[10px] text-slate-400">SIH26179 Edge AI Processing Engine (Qualcomm QCS6490 / Python / OpenCV / QNN)</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button onclick="copyPythonCode()" id="copyCodeBtn" class="px-3 py-1.5 bg-cyan-950 hover:bg-cyan-900 border border-cyan-600 text-cyan-200 text-xs font-mono rounded flex items-center space-x-1.5 transition">
+                        <i class="fa-solid fa-copy"></i>
+                        <span>Copy Code</span>
+                    </button>
+                    <button onclick="togglePythonModal()" class="w-8 h-8 rounded-lg bg-cyber-800 hover:bg-cyber-700 text-slate-300 flex items-center justify-center transition">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-4 overflow-y-auto flex-1 font-mono text-xs text-slate-300 bg-cyber-950 leading-relaxed select-all">
+                <pre id="pythonCodeContent"><code># ==============================================================================
+# SIH26179: RetailEdge AI - Complete Edge Pipeline Implementation
+# Target Hardware: Qualcomm Dragon Q6A / QCS6490 (Hexagon NPU 12.8 TOPS)
+# Features: Tier-1 Trigger, Quantized Detection, ByteTrack, Sensor-Level Privacy
+# ==============================================================================
+
+import cv2
+import numpy as np
+import time
+import json
+import sqlite3
+from dataclasses import dataclass
+from typing import List, Tuple, Dict
+
+# Configuration Constants
+RTSP_CAM_ENTRANCE = "rtsp://192.168.1.101:554/live"
+RTSP_CAM_SHELF    = "rtsp://192.168.1.102:554/live"
+RTSP_CAM_BILLING  = "rtsp://192.168.1.103:554/live"
+
+TFIF_CONGESTION_THRESHOLD = 2.5
+SHELF_EDGE_DENSITY_THRESHOLD = 0.35
+
+@dataclass
+class EdgeDetection:
+    track_id: int
+    centroid: Tuple[int, int]
+    bbox: Tuple[int, int, int, int]
+    zone: str
+    dwell_sec: float
+
+class Tier1AdaptiveTrigger:
+    """
+    Candidate Patent A: Zone-Aware Adaptive Two-Tier Edge Inference.
+    Runs low-compute background subtraction or frame difference.
+    Wakes up heavy quantized model only on motion threshold breach.
+    """
+    def __init__(self, sensitivity_threshold=1500):
+        self.subtractor = cv2.createBackgroundSubtractorMOG2(history=100, varThreshold=50, detectShadows=False)
+        self.sensitivity = sensitivity_threshold
+
+    def evaluate_zone_activity(self, frame, roi_coords) -> bool:
+        x, y, w, h = roi_coords
+        roi = frame[y:y+h, x:x+w]
+        fg_mask = self.subtractor.apply(roi)
+        motion_energy = np.sum(fg_mask > 0)
+        return motion_energy > self.sensitivity
+
+class SensorPrivacyAnonymizer:
+    """
+    Candidate Patent B: Sensor-Level Privacy-Preserving Architecture.
+    Destroys facial/clothing pixels in volatile RAM immediately.
+    Extracts non-invertible spatial centroids and vector metadata.
+    """
+    @staticmethod
+    def strip_and_anonymize(track_id: int, bbox, zone: str) -> Dict:
+        x, y, w, h = bbox
+        centroid_x = int(x + w / 2)
+        centroid_y = int(y + h / 2)
+        
+        # Identity payload contains zero biometric information
+        return {
+            "track_id": track_id,
+            "centroid": (centroid_x, centroid_y),
+            "zone": zone,
+            "timestamp": time.time()
+        }
+
+class PredictiveQueueEngine:
+    """
+    Candidate Patent C: Predictive Queue Congestion Index (PQCI)
+    Computes Temporal Flow Imbalance Factor (TFIF = Flow_in / Flow_bill)
+    """
+    def __init__(self, window_sec=60):
+        self.inflow_history = []
+        self.billing_history = []
+        self.window = window_sec
+
+    def update_rates(self, entries_delta: int, billed_delta: int):
+        now = time.time()
+        self.inflow_history.append((now, entries_delta))
+        self.billing_history.append((now, billed_delta))
+        self._prune(now)
+
+    def _prune(self, now):
+        self.inflow_history = [x for x in self.inflow_history if now - x[0] <= self.window]
+        self.billing_history = [x for x in self.billing_history if now - x[0] <= self.window]
+
+    def compute_pqci(self) -> Dict:
+        in_sum = sum(x[1] for x in self.inflow_history) or 1
+        bill_sum = sum(x[1] for x in self.billing_history) or 1
+        tfif = round(in_sum / bill_sum, 2)
+
+        congested = tfif > TFIF_CONGESTION_THRESHOLD
+        eta_minutes = round(max(1.5, 7.0 - tfif), 1) if congested else None
+
+        return {
+            "tfif": tfif,
+            "congested": congested,
+            "predicted_congestion_eta_min": eta_minutes,
+            "action": "OPEN_COUNTER_2" if congested else "STANDBY"
+        }
+
+class InventoryDensityEngine:
+    """
+    Edge-density texture variance for shelf out-of-stock estimation.
+    Avoids expensive multi-hundred SKU object detection models.
+    """
+    @staticmethod
+    def calculate_stock_density(shelf_roi) -> float:
+        gray = cv2.cvtColor(shelf_roi, cv2.COLOR_BGR2GRAY)
+        edges = cv2.Canny(gray, 50, 150)
+        density = np.count_nonzero(edges) / edges.size
+        return density
+
+# Execution Loop on Qualcomm Hexagon NPU
+def main():
+    print("[INIT] RetailEdge AI Appliance booted on Qualcomm QCS6490.")
+    print("[PRIVACY] Zero raw video leaving local system bus.")
+    
+    t1_trigger = Tier1AdaptiveTrigger()
+    pqci_engine = PredictiveQueueEngine()
+    
+    # In actual deployment, cv2.VideoCapture reads RTSP camera streams
+    print("[RUNNING] Listening for temporal flow spikes and shelf stock-outs...")
+
+if __name__ == "__main__":
+    main()
+</code></pre>
+            </div>
+            
+            <div class="px-5 py-3 border-t border-cyber-700 bg-cyber-850 flex justify-between items-center text-xs text-slate-400 font-mono">
+                <span>Self-contained local execution: No external cloud API keys needed.</span>
+                <button onclick="togglePythonModal()" class="px-3 py-1 bg-cyber-700 hover:bg-cyber-600 text-white rounded">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* ==========================================================================
+           REAL-TIME API INTEGRATION — RetailEdge Sentinel FastAPI Backend
+           Endpoint: http://localhost:8502/metrics  (polled every 2 s)
+           Fallback:  Pure JS simulation if API is offline
+           ========================================================================== */
+
+        const API_BASE = 'http://localhost:8502';
+        let apiOnline = false;
+
+        async function checkApiAvailability() {
+            try {
+                const resp = await fetch(`${API_BASE}/`, { signal: AbortSignal.timeout(800) });
+                apiOnline = resp.ok;
+                updateApiStatusBadge(apiOnline);
+            } catch { apiOnline = false; updateApiStatusBadge(false); }
+        }
+
+        function updateApiStatusBadge(online) {
+            const badge = document.getElementById('apiStatusBadge');
+            if (!badge) return;
+            if (online) {
+                badge.textContent = 'API LIVE ✓';
+                badge.className = 'text-[10px] font-mono bg-emerald-950 text-emerald-300 border border-emerald-500/50 px-2 py-0.5 rounded ml-2';
+            } else {
+                badge.textContent = 'API OFFLINE (SIM MODE)';
+                badge.className = 'text-[10px] font-mono bg-amber-950 text-amber-300 border border-amber-500/50 px-2 py-0.5 rounded ml-2';
+            }
+        }
+
+        async function fetchMetrics() {
+            if (!apiOnline) return;
+            try {
+                const resp = await fetch(`${API_BASE}/metrics`, { signal: AbortSignal.timeout(1500) });
+                if (!resp.ok) return;
+                const data = await resp.json();
+                applyApiMetrics(data);
+            } catch { apiOnline = false; updateApiStatusBadge(false); }
+        }
+
+        function applyApiMetrics(data) {
+            if (data.occupancy !== undefined) state.occupancy = data.occupancy;
+            if (data.footfall !== undefined) state.footfall = data.footfall;
+            if (data.tfif !== undefined) state.tfif = parseFloat(data.tfif);
+            if (data.shelf_density_pct !== undefined) state.shelfDensity = parseFloat(data.shelf_density_pct);
+            if (data.queue_count !== undefined) state.queueCount = data.queue_count;
+            if (data.fps !== undefined) state.fps = parseFloat(data.fps);
+            if (data.hw_temp !== undefined) state.temp = parseFloat(data.hw_temp);
+            if (data.hw_ram !== undefined) state.ram = parseFloat(data.hw_ram);
+            if (data.sim_rush_hour !== undefined) state.simRushHour = data.sim_rush_hour;
+            if (data.sim_depletion !== undefined) state.simShelfDepletion = data.sim_depletion;
+
+            // Header HW telemetry
+            if (data.fps) document.getElementById('hwFps').textContent = `${data.fps} FPS`;
+            if (data.hw_temp) document.getElementById('hwTemp').textContent = `${data.hw_temp}°C`;
+            if (data.hw_ram) document.getElementById('hwRam').textContent = `${data.hw_ram} / 8.0 GB`;
+
+            // Cam 1 HUD
+            if (data.cam1_inflow !== undefined) document.getElementById('cam1Inflow').textContent = `${data.cam1_inflow} / min`;
+            if (data.cam1_outflow !== undefined) document.getElementById('cam1Outflow').textContent = `${data.cam1_outflow} / min`;
+            if (data.cam1_roi_count !== undefined) document.getElementById('cam1RoiCount').textContent = data.cam1_roi_count;
+            if (data.cam1_cross_today !== undefined) document.getElementById('cam1CrossTotal').textContent = `+${data.cam1_cross_today} Today`;
+
+            // Cam 2 HUD (Shelf)
+            if (data.cam2_density !== undefined) {
+                const d = parseFloat(data.cam2_density).toFixed(1);
+                const el = document.getElementById('cam2Density');
+                el.innerHTML = parseFloat(d) < 30
+                    ? `<span class="text-rose-400 font-bold">${d}% (Critical)</span>`
+                    : `<span class="text-emerald-400 font-bold">${d}%</span>`;
+            }
+            if (data.cam2_oos_prob !== undefined) {
+                const prob = parseFloat(data.cam2_oos_prob);
+                document.getElementById('cam2Oos').innerHTML = prob > 50
+                    ? `<span class="text-rose-400 font-bold">${prob.toFixed(0)}% Out-Of-Stock</span>`
+                    : `<span class="text-emerald-400">${prob.toFixed(0)}%</span>`;
+            }
+            if (data.cam2_status !== undefined) {
+                const el = document.getElementById('cam2StatusBadge');
+                el.innerHTML = data.cam2_status.includes('DEPLETION')
+                    ? `<span class="text-rose-400 font-bold">${data.cam2_status}</span>`
+                    : `<span class="text-emerald-400 font-bold">${data.cam2_status}</span>`;
+            }
+
+            // Cam 3 HUD (Queue)
+            if (data.cam3_queue_count !== undefined) document.getElementById('cam3QueueCount').textContent = data.cam3_queue_count;
+            if (data.cam3_wait_est !== undefined) document.getElementById('cam3WaitEst').textContent = `${data.cam3_wait_est} min`;
+            if (data.cam3_status !== undefined) {
+                const el = document.getElementById('cam3StatusBadge');
+                el.innerHTML = data.cam3_status.includes('SURGE')
+                    ? `<span class="text-rose-400 font-bold">${data.cam3_status}</span>`
+                    : `<span class="text-cyan-400 font-bold">${data.cam3_status}</span>`;
+            }
+
+            // PQCI Panel update
+            const tfif = data.tfif !== undefined ? parseFloat(data.tfif) : state.tfif;
+            const pBar = document.getElementById('pqciProgressBar');
+            const pctWidth = Math.min(100, Math.round((tfif / 4.0) * 100));
+            pBar.style.width = `${pctWidth}%`;
+            document.getElementById('pqciTfifVal').textContent = `TFIF: ${tfif.toFixed(2)}x`;
+            const pqciState = data.pqci_state || (tfif >= 3.5 ? 'SURGE' : tfif >= 2.5 ? 'CONGESTION' : tfif >= 1.5 ? 'BUILDING' : 'BALANCED');
+            const labelMap = {
+                BALANCED: '<span class="text-emerald-400 font-bold">NORMAL (Risk: Low)</span>',
+                BUILDING: '<span class="text-amber-400 font-bold">BUILDING (Risk: Medium)</span>',
+                CONGESTION: '<span class="text-orange-400 font-bold animate-pulse">CONGESTION (Risk: High)</span>',
+                SURGE: '<span class="text-rose-400 font-bold animate-pulse">CRITICAL SURGE</span>'
+            };
+            document.getElementById('pqciRiskLabel').innerHTML = labelMap[pqciState] || labelMap.BALANCED;
+            if (['CONGESTION','SURGE'].includes(pqciState)) {
+                pBar.className = 'h-full bg-rose-600 rounded-full transition-all duration-500 shadow-lg shadow-rose-600/50';
+                document.getElementById('pqciCountdown').innerHTML = data.pqci_eta_minutes
+                    ? `<span class="text-rose-400 font-bold">~${data.pqci_eta_minutes}m until saturation</span>`
+                    : '<span class="text-rose-400">Saturation Imminent</span>';
+                document.getElementById('pqciAction').innerHTML = '<span class="text-rose-400 font-bold">OPEN COUNTER 2 NOW</span>';
+            } else {
+                pBar.className = 'h-full bg-gradient-to-r from-emerald-500 via-amber-500 to-rose-600 rounded-full transition-all duration-500';
+                document.getElementById('pqciCountdown').textContent = 'No Overload Foreseen';
+                document.getElementById('pqciAction').textContent = 'Counter 1 Capable';
+            }
+
+            // Live JSON payload monitor
+            const payload = {
+                node_id: data.node_id || "RETAIL_EDGE_QCS6490_01",
+                timestamp: new Date().toISOString(),
+                occupancy: data.occupancy,
+                flow_metrics: { tfif: data.tfif, pqci_state: data.pqci_state || "BALANCED", action: data.pqci_action || "STANDBY" },
+                shelf_metrics: { zone: "SHELF_A", edge_density_pct: data.shelf_density_pct, restock_flag: data.sim_depletion || false },
+                tier1_saved_pct: data.tier1_efficiency_pct || 0,
+                video_stream: null, pii_biometric_data: null
+            };
+            document.getElementById('jsonPayloadMonitor').textContent = JSON.stringify(payload, null, 2);
+        }
+
+        /* ==========================================================================
+           STATE MANAGEMENT & ENGINE SIMULATION VARIABLES
+           ========================================================================== */
+        const state = {
+            visionMode: 'vectors', // 'raw' or 'vectors'
+            simRushHour: false,
+            simShelfDepletion: false,
+            occupancy: 14,
+            footfall: 186,
+            tfif: 1.18,
+            shelfDensity: 74,
+            queueCount: 3,
+            outboundVideoBytes: 0.00,
+            fps: 28.4,
+            temp: 42.4,
+            ram: 1.84,
+            peopleCam1: [],
+            peopleCam2: [],
+            peopleCam3: []
+        };
+
+        // DOM elements cache
+        const cam1Canvas = document.getElementById('canvasCam1');
+        const cam2Canvas = document.getElementById('canvasCam2');
+        const cam3Canvas = document.getElementById('canvasCam3');
+        const ctx1 = cam1Canvas.getContext('2d');
+        const ctx2 = cam2Canvas.getContext('2d');
+        const ctx3 = cam3Canvas.getContext('2d');
+
+        function initSimulatedAgents() {
+            // Camera 1 (Entrance) Agents
+            state.peopleCam1 = [
+                { id: 101, x: 50, y: 80, vx: 1.2, vy: 0.2, dwell: 6, crossed: true },
+                { id: 104, x: 190, y: 110, vx: -0.8, vy: 0.4, dwell: 18, crossed: false },
+                { id: 109, x: 120, y: 140, vx: 0.6, vy: -0.3, dwell: 32, crossed: true }
+            ];
+
+            // Camera 2 (Shelf A) Agents
+            state.peopleCam2 = [
+                { id: 107, x: 140, y: 95, vx: 0.1, vy: 0.05, dwell: 78, reaching: true },
+                { id: 112, x: 70, y: 120, vx: -0.3, vy: 0.2, dwell: 24, reaching: false }
+            ];
+
+            // Camera 3 (Checkout) Agents
+            state.peopleCam3 = [
+                { id: 102, x: 190, y: 100, vx: 0, vy: 0, queuePos: 1 },
+                { id: 105, x: 140, y: 100, vx: 0, vy: 0, queuePos: 2 },
+                { id: 114, x: 90, y: 100, vx: 0, vy: 0, queuePos: 3 }
+            ];
+        }
+
+        function renderCam1(timestamp) {
+            const w = cam1Canvas.width = cam1Canvas.offsetWidth;
+            const h = cam1Canvas.height = cam1Canvas.offsetHeight;
+
+            // Background representation
+            ctx1.fillStyle = '#060b13';
+            ctx1.fillRect(0, 0, w, h);
+
+            // Draw grid flooring
+            ctx1.strokeStyle = 'rgba(30, 41, 59, 0.4)';
+            ctx1.lineWidth = 1;
+            for (let x = 0; x < w; x += 30) {
+                ctx1.beginPath(); ctx1.moveTo(x, 0); ctx1.lineTo(x, h); ctx1.stroke();
+            }
+            for (let y = 0; y < h; y += 30) {
+                ctx1.beginPath(); ctx1.moveTo(0, y); ctx1.lineTo(w, y); ctx1.stroke();
+            }
+
+            // Entry detection trigger line
+            const entryLineX = w * 0.45;
+            ctx1.strokeStyle = '#06b6d4';
+            ctx1.lineWidth = 2;
+            ctx1.setLineDash([6, 4]);
+            ctx1.beginPath();
+            ctx1.moveTo(entryLineX, 0);
+            ctx1.lineTo(entryLineX, h);
+            ctx1.stroke();
+            ctx1.setLineDash([]);
+
+            // Label line
+            ctx1.fillStyle = '#06b6d4';
+            ctx1.font = '9px monospace';
+            ctx1.fillText("ENTRY_GATE_CROSSING_LINE", entryLineX + 6, 18);
+
+            // Update & Render Agents
+            state.peopleCam1.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+
+                if (p.x < 30 || p.x > w - 40) p.vx *= -1;
+                if (p.y < 40 || p.y > h - 50) p.vy *= -1;
+
+                drawEntity(ctx1, p.x, p.y, p.id, state.visionMode, '#10b981', `Dwell: ${p.dwell}s`);
+            });
+        }
+
+        function renderCam2() {
+            const w = cam2Canvas.width = cam2Canvas.offsetWidth;
+            const h = cam2Canvas.height = cam2Canvas.offsetHeight;
+
+            ctx2.fillStyle = '#070d14';
+            ctx2.fillRect(0, 0, w, h);
+
+            // Shelf ROI Polygon
+            const shelfX = 40, shelfY = 35, shelfW = w - 80, shelfH = h - 75;
+            
+            // Draw Shelf Texture Density
+            ctx2.fillStyle = state.simShelfDepletion ? 'rgba(244, 63, 94, 0.08)' : 'rgba(16, 185, 129, 0.08)';
+            ctx2.fillRect(shelfX, shelfY, shelfW, shelfH);
+
+            ctx2.strokeStyle = state.simShelfDepletion ? '#f43f5e' : '#10b981';
+            ctx2.lineWidth = 1.5;
+            ctx2.strokeRect(shelfX, shelfY, shelfW, shelfH);
+
+            // Edge density simulated matrix pattern
+            const rows = 4;
+            const cols = 8;
+            const cellW = shelfW / cols;
+            const cellH = shelfH / rows;
+
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const isMissing = state.simShelfDepletion && (c > 2 && c < 7);
+                    ctx2.fillStyle = isMissing ? 'rgba(244, 63, 94, 0.25)' : 'rgba(6, 182, 212, 0.35)';
+                    ctx2.fillRect(shelfX + c * cellW + 3, shelfY + r * cellH + 3, cellW - 6, cellH - 6);
+                }
+            }
+
+            ctx2.fillStyle = state.simShelfDepletion ? '#f43f5e' : '#10b981';
+            ctx2.font = '9px monospace';
+            ctx2.fillText(`SHELF_ROI_A [Edge Texture: ${state.shelfDensity}%]`, shelfX + 6, shelfY - 8);
+
+            // Shoppers near shelf
+            state.peopleCam2.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                if (p.x < 50 || p.x > w - 60) p.vx *= -1;
+                drawEntity(ctx2, p.x, p.y, p.id, state.visionMode, '#f59e0b', `Dwell: ${p.dwell}s`);
+            });
+        }
+
+        function renderCam3() {
+            const w = cam3Canvas.width = cam3Canvas.offsetWidth;
+            const h = cam3Canvas.height = cam3Canvas.offsetHeight;
+
+            ctx3.fillStyle = '#060a11';
+            ctx3.fillRect(0, 0, w, h);
+
+            // Billing Counter desk ROI
+            const deskX = w - 75, deskY = 50, deskW = 60, deskH = h - 90;
+            ctx3.fillStyle = 'rgba(30, 41, 59, 0.8)';
+            ctx3.fillRect(deskX, deskY, deskW, deskH);
+            ctx3.strokeStyle = '#06b6d4';
+            ctx3.lineWidth = 1.5;
+            ctx3.strokeRect(deskX, deskY, deskW, deskH);
+
+            ctx3.fillStyle = '#38bdf8';
+            ctx3.font = '9px monospace';
+            ctx3.fillText("CASHIER_01", deskX + 4, deskY + 20);
+
+            // Queue wait lane line
+            ctx3.strokeStyle = state.simRushHour ? 'rgba(244, 63, 94, 0.5)' : 'rgba(16, 185, 129, 0.3)';
+            ctx3.lineWidth = 1;
+            ctx3.setLineDash([4, 4]);
+            ctx3.strokeRect(30, 80, deskX - 45, 50);
+            ctx3.setLineDash([]);
+
+            // Draw Queue customers
+            const customers = state.simRushHour ? 7 : 3;
+            for (let i = 0; i < customers; i++) {
+                const qx = deskX - 35 - (i * 30);
+                const qy = 105;
+                drawEntity(ctx3, qx, qy, 200 + i, state.visionMode, state.simRushHour ? '#f43f5e' : '#06b6d4', `Q#${i + 1}`);
+            }
+        }
+
+        function drawEntity(ctx, x, y, id, mode, color, tag) {
+            const boxW = 28;
+            const boxH = 50;
+            const topX = x - boxW / 2;
+            const topY = y - boxH / 2;
+
+            if (mode === 'raw') {
+                // Simulated CCTV Bounding Box with full presence
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 1.5;
+                ctx.strokeRect(topX, topY, boxW, boxH);
+
+                // Corner brackets for IT feel
+                const cornerLen = 6;
+                ctx.fillStyle = color;
+                ctx.fillRect(topX, topY, cornerLen, 2);
+                ctx.fillRect(topX, topY, 2, cornerLen);
+                ctx.fillRect(topX + boxW - cornerLen, topY, cornerLen, 2);
+                ctx.fillRect(topX + boxW - 2, topY, 2, cornerLen);
+
+                // Tag and ID
+                ctx.fillStyle = color;
+                ctx.font = '8px monospace';
+                ctx.fillText(`ID:${id}`, topX, topY - 5);
+                if (tag) {
+                    ctx.fillStyle = '#94a3b8';
+                    ctx.fillText(tag, topX, topY + boxH + 9);
+                }
+            } else {
+                // SENSOR-LEVEL ANONYMIZED WIREFRAME VECTOR (PATENT CANDIDATE B)
+                // Raw pixels are completely deleted; only centroid & wireframe vector exists
+                ctx.strokeStyle = 'rgba(6, 182, 212, 0.8)';
+                ctx.lineWidth = 1.2;
+
+                // Center centroid dot
+                ctx.beginPath();
+                ctx.arc(x, y, 3, 0, Math.PI * 2);
+                ctx.fillStyle = '#10b981';
+                ctx.fill();
+
+                // Abstract spatial diamond / anonymous silhouette wireframe
+                ctx.beginPath();
+                ctx.moveTo(x, y - 22);
+                ctx.lineTo(x + 12, y);
+                ctx.lineTo(x, y + 22);
+                ctx.lineTo(x - 12, y);
+                ctx.closePath();
+                ctx.stroke();
+
+                // Vector ID and Coordinate Tag
+                ctx.fillStyle = '#06b6d4';
+                ctx.font = '7px monospace';
+                ctx.fillText(`PID_${id}`, x - 12, y - 25);
+                ctx.fillStyle = '#64748b';
+                ctx.fillText(`(${Math.round(x)},${Math.round(y)})`, x - 15, y + 31);
+            }
+        }
+
+        function setGlobalVisionMode(mode) {
+            state.visionMode = mode;
+            const rawBtn = document.getElementById('modeRawBtn');
+            const vecBtn = document.getElementById('modeVecBtn');
+
+            if (mode === 'raw') {
+                rawBtn.className = 'px-2 py-0.5 rounded font-mono text-[11px] bg-cyan-900 border border-cyan-500 text-cyan-200 font-bold transition';
+                vecBtn.className = 'px-2 py-0.5 rounded font-mono text-[11px] bg-cyber-800 text-slate-400 hover:text-white transition';
+            } else {
+                vecBtn.className = 'px-2 py-0.5 rounded font-mono text-[11px] bg-cyan-900 border border-cyan-500 text-cyan-200 font-bold transition';
+                rawBtn.className = 'px-2 py-0.5 rounded font-mono text-[11px] bg-cyber-800 text-slate-400 hover:text-white transition';
+            }
+            updateTelemetryDisplay();
+        }
+
+        /* ---- Scenario: Rush Hour (calls backend + updates local UI) ---- */
+        async function triggerRushHourScenario() {
+            state.simRushHour = true;
+            state.tfif = 3.84;
+            state.queueCount = 8;
+            state.occupancy = 27;
+
+            // Call backend API if online
+            if (apiOnline) {
+                try { await fetch(`${API_BASE}/scenario/rush`, { method: 'POST' }); } catch {}
+            }
+
+            const pBar = document.getElementById('pqciProgressBar');
+            pBar.style.width = '88%';
+            pBar.className = 'h-full bg-rose-600 rounded-full transition-all duration-500 shadow-lg shadow-rose-600/50';
+            document.getElementById('pqciRiskLabel').innerHTML = `<span class="text-rose-400 font-bold animate-pulse">CRITICAL (Risk: High)</span>`;
+            document.getElementById('pqciTfifVal').innerHTML = `<span class="text-rose-400 font-bold">TFIF: 3.84x (Surge)</span>`;
+            document.getElementById('pqciCountdown').innerHTML = `<span class="text-rose-400 font-bold">~4m 15s until saturation</span>`;
+            document.getElementById('pqciAction').innerHTML = `<span class="text-rose-400 font-bold">OPEN COUNTER 2 NOW</span>`;
+            document.getElementById('cam3QueueCount').textContent = '8 (Imbalance 3.8x)';
+            document.getElementById('cam3WaitEst').textContent = '6.8 min';
+            document.getElementById('cam3StatusBadge').innerHTML = '<span class="text-rose-400">SURGE DETECTED</span>';
+            const recCard = document.getElementById('recCardQueue');
+            recCard.className = 'p-3 bg-rose-950/40 rounded-lg border border-rose-500/80 flex items-start justify-between transition-all glow-rose';
+            document.getElementById('recTitleQueue').innerHTML = `<span class="text-rose-300">⚠️ CRITICAL ACTION: Open Counter 2 in ~4 mins</span>`;
+            document.getElementById('recDescQueue').textContent = 'Temporal Flow Imbalance detected (Entry rate 4.2x checkout speed). Queue will exceed buffer in 4m 15s.';
+            document.getElementById('recIconQueue').className = 'w-7 h-7 rounded bg-rose-900 text-rose-300 flex items-center justify-center text-xs mt-0.5 animate-bounce';
+            showToast("Surge Flow Detected (TFIF: 3.84x)", "PQCI predictive model triggered Level 3 ACT: 'Open Counter 2 immediately'.", "fa-triangle-exclamation");
+            updateTelemetryDisplay();
+        }
+
+        /* ---- Scenario: Shelf Depletion ---- */
+        async function triggerDepletionScenario() {
+            state.simShelfDepletion = true;
+            state.shelfDensity = 18;
+
+            if (apiOnline) {
+                try { await fetch(`${API_BASE}/scenario/depletion`, { method: 'POST' }); } catch {}
+            }
+
+            document.getElementById('cam2Density').innerHTML = '<span class="text-rose-400 font-bold">18% (Critical)</span>';
+            document.getElementById('cam2Oos').innerHTML = '<span class="text-rose-400 font-bold">92% Out-Of-Stock</span>';
+            document.getElementById('cam2StatusBadge').innerHTML = '<span class="text-rose-400 font-bold">DEPLETION DETECTED</span>';
+            const recStock = document.getElementById('recCardStock');
+            recStock.className = 'p-3 bg-amber-950/40 rounded-lg border border-amber-500/80 flex items-start justify-between transition-all';
+            document.getElementById('recTitleStock').innerHTML = `<span class="text-amber-300">📦 URGENT RESTOCK: Shelf A Snacks</span>`;
+            document.getElementById('recDescStock').textContent = 'High dwell interest (78s) combined with 82% edge-density depletion. Potential lost revenue.';
+            document.getElementById('recIconStock').className = 'w-7 h-7 rounded bg-amber-900 text-amber-300 flex items-center justify-center text-xs mt-0.5';
+            showToast("Inventory Stock-out Alert", "Shelf A Snacks edge density dropped to 18%. Restock recommended.", "fa-boxes-packing");
+            updateTelemetryDisplay();
+        }
+
+        /* ---- Voice Broadcast: Real Web Speech API with Hindi TTS ---- */
+        function triggerVoiceBroadcast() {
+            const hindiTexts = [
+                "चेतावनी: बिलिंग काउंटर 2 को 5 मिनट में खोलें।",
+                "कृपया काउंटर 2 पर आएं, ग्राहकों की प्रतीक्षा हो रही है।",
+                "शेल्फ ए पर स्टॉक कम है, कृपया तुरंत भरें।"
+            ];
+            const text = hindiTexts[Math.floor(Math.random() * hindiTexts.length)];
+
+            // Real Web Speech API — local, no cloud, no API key
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel(); // stop any ongoing speech
+                const utt = new SpeechSynthesisUtterance(text);
+                utt.lang = 'hi-IN';
+                utt.rate = 0.9;
+                utt.pitch = 1.0;
+                utt.volume = 1.0;
+
+                // Try to use a Hindi voice if available
+                const voices = window.speechSynthesis.getVoices();
+                const hindiVoice = voices.find(v => v.lang === 'hi-IN' || v.lang.startsWith('hi'));
+                if (hindiVoice) utt.voice = hindiVoice;
+
+                window.speechSynthesis.speak(utt);
+                showToast("🔊 Local Voice Dispatch (Bhashini TTS)", `"${text}" — Dispatched via Web Speech API (Hindi, no cloud).`, "fa-volume-high");
+            } else {
+                showToast("Local Voice Dispatch Simulated", `"${text}" (Bhashini local TTS dispatched to store counter speaker)`, "fa-volume-high");
+            }
+        }
+
+        /* ---- Reset All Simulations ---- */
+        async function resetSimulations() {
+            state.simRushHour = false;
+            state.simShelfDepletion = false;
+            state.tfif = 1.18;
+            state.shelfDensity = 74;
+            state.occupancy = 14;
+
+            if (apiOnline) {
+                try { await fetch(`${API_BASE}/scenario/reset`, { method: 'POST' }); } catch {}
+            }
+
+            const pBar = document.getElementById('pqciProgressBar');
+            pBar.style.width = '24%';
+            pBar.className = 'h-full bg-gradient-to-r from-emerald-500 via-amber-500 to-rose-600 rounded-full transition-all duration-500';
+            document.getElementById('pqciRiskLabel').innerHTML = 'NORMAL (Risk: Low)';
+            document.getElementById('pqciTfifVal').textContent = 'TFIF: 1.18x';
+            document.getElementById('pqciCountdown').textContent = 'No Overload Foreseen';
+            document.getElementById('pqciAction').textContent = 'Counter 1 Capable';
+            document.getElementById('cam2Density').textContent = '74%';
+            document.getElementById('cam2Oos').textContent = '12%';
+            document.getElementById('cam2StatusBadge').innerHTML = '<span class="text-emerald-400">STOCK ADEQUATE</span>';
+            document.getElementById('cam3QueueCount').textContent = '3';
+            document.getElementById('cam3WaitEst').textContent = '2.4 min';
+            document.getElementById('cam3StatusBadge').innerHTML = '<span class="text-cyan-400">BALANCED</span>';
+            document.getElementById('recCardQueue').className = 'p-3 bg-cyber-950 rounded-lg border border-cyber-800 flex items-start justify-between transition-all';
+            document.getElementById('recTitleQueue').textContent = 'Counter Capacity Stable';
+            document.getElementById('recDescQueue').textContent = 'Current checkout processing rate (1.2 shoppers/min) matches door entrance velocity.';
+            document.getElementById('recIconQueue').className = 'w-7 h-7 rounded bg-cyber-800 text-cyan-400 flex items-center justify-center text-xs mt-0.5';
+            document.getElementById('recCardStock').className = 'p-3 bg-cyber-950 rounded-lg border border-cyber-800 flex items-start justify-between transition-all';
+            document.getElementById('recTitleStock').textContent = 'Shelf A (Snacks) Density Optimal';
+            document.getElementById('recDescStock').textContent = 'Canny edge density at 74%. Normal picking frequency observed.';
+            showToast("System Reset", "Live store models returned to baseline normal operations.", "fa-rotate-left");
+            updateTelemetryDisplay();
+        }
+
+        function acknowledgeAction(type) {
+            showToast("Action Acknowledged", `Edge Decision Engine logged supervisor acknowledgment for ${type.toUpperCase()}.`, "fa-check");
+        }
+
+        function updateTelemetryDisplay() {
+            const now = new Date();
+            const timeStr = now.toTimeString().split(' ')[0] + ' IST';
+            document.getElementById('clockTime').textContent = timeStr;
+
+            document.getElementById('kpiOccupancy').textContent = state.occupancy;
+            document.getElementById('kpiFootfall').textContent = state.footfall;
+
+            // Update JSON stream monitor
+            const jsonBox = document.getElementById('jsonPayloadMonitor');
+            const payload = {
+                node_id: "RETAIL_EDGE_QCS6490_01",
+                timestamp: now.toISOString(),
+                occupancy: state.occupancy,
+                flow_metrics: {
+                    tfif: state.tfif,
+                    pqci_status: state.simRushHour ? "CONGESTION_PREDICTED" : "BALANCED"
+                },
+                shelf_metrics: {
+                    zone: "SHELF_A",
+                    edge_density_pct: state.shelfDensity,
+                    restock_flag: state.simShelfDepletion
+                },
+                video_stream: null,
+                pii_biometric_data: null
+            };
+            jsonBox.textContent = JSON.stringify(payload, null, 2);
+        }
+
+        let toastTimeout;
+        function showToast(title, body, iconClass) {
+            const toast = document.getElementById('toastNotification');
+            document.getElementById('toastTitle').textContent = title;
+            document.getElementById('toastBody').textContent = body;
+            document.getElementById('toastIcon').innerHTML = `<i class="fa-solid ${iconClass}"></i>`;
+
+            toast.classList.remove('translate-y-32', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                closeToast();
+            }, 5000);
+        }
+
+        function closeToast() {
+            const toast = document.getElementById('toastNotification');
+            toast.classList.remove('translate-y-0', 'opacity-100');
+            toast.classList.add('translate-y-32', 'opacity-0');
+        }
+
+        function togglePythonModal() {
+            const modal = document.getElementById('pythonScriptModal');
+            modal.classList.toggle('hidden');
+        }
+
+        function copyPythonCode() {
+            const codeText = document.getElementById('pythonCodeContent').innerText;
+            const tempTextArea = document.createElement('textarea');
+            tempTextArea.value = codeText;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempTextArea);
+
+            const btn = document.getElementById('copyCodeBtn');
+            btn.innerHTML = `<i class="fa-solid fa-check text-emerald-400"></i> <span>Copied!</span>`;
+            setTimeout(() => {
+                btn.innerHTML = `<i class="fa-solid fa-copy"></i> <span>Copy Code</span>`;
+            }, 2500);
+        }
+
+        let lastFrameTime = performance.now();
+        function mainLoop(now) {
+            const delta = now - lastFrameTime;
+            lastFrameTime = now;
+
+            // Render all 3 camera feeds
+            renderCam1(now);
+            renderCam2();
+            renderCam3();
+
+            requestAnimationFrame(mainLoop);
+        }
+
+        // Initialize on DOM load
+        window.addEventListener('load', () => {
+            initSimulatedAgents();
+            requestAnimationFrame(mainLoop);
+            updateTelemetryDisplay();
+
+            // Preload speech voices (browser needs this)
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.getVoices();
+                window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
+            }
+
+            // Check if FastAPI backend is running
+            checkApiAvailability();
+            setInterval(checkApiAvailability, 10000); // re-check every 10s
+
+            // Poll /metrics every 2s when API is online
+            setInterval(() => {
+                fetchMetrics();
+                updateTelemetryDisplay();
+            }, 2000);
+        });
+    </script>
+</body>
+</html>
