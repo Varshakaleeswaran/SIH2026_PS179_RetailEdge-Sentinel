@@ -128,36 +128,141 @@ class LocalInferenceEngine(InferenceEngine):
 
 class QualcommInferenceEngine(InferenceEngine):
     """
-    Target Platform Adapter for Qualcomm Dragonwing Edge AI.
-    Integrates with Qualcomm AI Runtime (QAIRT / QNN / SNPE) and Qualcomm AI Hub.
-    In the local MVP development environment, this acts as the hardware deployment adapter/stub.
+    Production Adapter for Qualcomm Dragonwing Edge AI (QCS6490).
+
+    Wraps QualcommAIHubInferenceEngine from src/qualcomm_aihub.py.
+
+    Setup (one-time, on your laptop):
+        1. pip install qai-hub qai-hub-models
+        2. qai-hub configure --api_token YOUR_TOKEN
+           (sign up free at https://app.aihub.qualcomm.com/)
+        3. python src/qualcomm_aihub.py --step all
+           → exports YOLOv8n to ONNX
+           → compiles to QNN on real QCS6490 via Qualcomm cloud
+           → downloads models/yolov8n_retailedge_qnn.bin
+        4. Copy the .bin to the Dragonwing hardware and run there.
+
+    On this laptop: use create_engine() which auto-falls-back to LocalInferenceEngine.
     """
 
-    def __init__(self, model_dlc_path: str = "models/yolov8n_qualcomm.dlc", target_chipset: str = "Qualcomm Dragonwing"):
-        self.model_dlc_path = model_dlc_path
+    def __init__(
+        self,
+        model_path: str = "models/yolov8n_retailedge_qnn.bin",
+        target_chipset: str = "QCS6490 (Proxy)",
+        confidence_thresh: float = 0.35,
+    ):
+        self.model_path = model_path
         self.target_chipset = target_chipset
-        self.is_hardware_available = False
+        self.confidence_thresh = confidence_thresh
+        self._engine = None
+        self._init_error: Optional[str] = None
+        self._load()
+
+    def _load(self):
+        try:
+            from src.qualcomm_aihub import QualcommAIHubInferenceEngine
+            from pathlib import Path
+            self._engine = QualcommAIHubInferenceEngine(
+                model_path=Path(self.model_path),
+                device_name=self.target_chipset,
+                confidence_thresh=self.confidence_thresh,
+            )
+            if not self._engine.is_ready():
+                self._init_error = self._engine._init_error
+        except Exception as e:
+            self._init_error = str(e)
+            logger.warning(f"QualcommInferenceEngine could not initialise: {e}")
 
     def detect(self, frame: np.ndarray) -> Tuple[List[Detection], float]:
-        """
-        On physical Dragonwing hardware: executes DLC/ONNX model via Qualcomm QNN/SNPE C++ / Python API.
-        In simulation: provides transparent status warning without falsifying metrics.
-        """
-        if not self.is_hardware_available:
+        if self._engine is None or not self._engine.is_ready():
             raise RuntimeError(
-                "Qualcomm Dragonwing hardware not detected. "
-                "Use LocalInferenceEngine for local laptop simulation."
+                "Qualcomm AI Hub engine not ready.\n"
+                f"Reason: {self._init_error}\n\n"
+                "📌 Setup steps:\n"
+                "  pip install qai-hub\n"
+                "  qai-hub configure --api_token YOUR_TOKEN\n"
+                "  python src/qualcomm_aihub.py --step all\n"
+                "  (sign up free: https://app.aihub.qualcomm.com/)"
             )
-        return [], 0.0
+        return self._engine.detect(frame)
+
+    def is_ready(self) -> bool:
+        return self._engine is not None and self._engine.is_ready()
 
     def get_platform_info(self) -> dict:
+        if self._engine:
+            return self._engine.get_platform_info()
         return {
             "engine": "QualcommInferenceEngine",
-            "model_format": "Qualcomm Deep Learning Container (DLC) / QNN Graph",
-            "runtime": "Qualcomm AI Runtime (QAIRT / QNN)",
-            "optimization_toolchain": "Qualcomm AI Hub & AIMET (8-bit Quantization)",
+            "model_format": "QNN Context Binary (INT8)",
+            "runtime": "Qualcomm AI Hub + QNN SDK",
             "target_hardware": self.target_chipset,
-            "status": "Target Deployment Architecture Defined (Pending Dragonwing Hardware Provisioning)",
+            "status": "NOT READY — run: python src/qualcomm_aihub.py --step all",
+            "aihub_portal": "https://app.aihub.qualcomm.com/",
             "is_target_hardware": True,
-            "qualcomm_accelerated": True
+            "qualcomm_accelerated": True,
+            "init_error": self._init_error,
         }
+
+
+def create_engine(
+    prefer_qualcomm: bool = False,
+    qualcomm_model_path: str = "models/yolov8n_retailedge_qnn.bin",
+    local_model_name: str = "yolov8n.pt",
+    confidence_thresh: float = 0.35,
+) -> InferenceEngine:
+    """
+    Smart factory: returns the best available inference engine.
+
+    Logic:
+      1. If prefer_qualcomm=True AND the QNN binary exists AND qai_hub is installed
+         → returns QualcommInferenceEngine (real NPU inference)
+      2. Otherwise
+         → returns LocalInferenceEngine (YOLOv8n on CPU/GPU, laptop mode)
+
+    This means the rest of the codebase never needs to know which engine is running.
+    Swapping from laptop to Qualcomm hardware is a one-line config change.
+
+    Parameters
+    ----------
+    prefer_qualcomm : bool
+        Set True when running on Dragonwing hardware.
+        Set False (default) for laptop simulation.
+    qualcomm_model_path : str
+        Path to the compiled QNN binary.
+    local_model_name : str
+        YOLOv8 model file for local inference.
+    confidence_thresh : float
+        Detection confidence threshold.
+
+    Returns
+    -------
+    InferenceEngine — either QualcommInferenceEngine or LocalInferenceEngine
+    """
+    from pathlib import Path
+
+    if prefer_qualcomm:
+        qnn_path = Path(qualcomm_model_path)
+        try:
+            import qai_hub  # noqa: F401 — check if installed
+            qc_engine = QualcommInferenceEngine(
+                model_path=str(qnn_path),
+                confidence_thresh=confidence_thresh,
+            )
+            if qc_engine.is_ready():
+                logger.info("✅ Using Qualcomm AI Hub inference engine (QCS6490 NPU)")
+                return qc_engine
+            else:
+                logger.warning(
+                    "Qualcomm engine requested but not ready "
+                    f"({qc_engine._init_error}). Falling back to local."
+                )
+        except ImportError:
+            logger.warning("qai_hub not installed. Falling back to LocalInferenceEngine.")
+
+    logger.info("Using LocalInferenceEngine (YOLOv8n on CPU — laptop simulation mode)")
+    return LocalInferenceEngine(
+        model_name=local_model_name,
+        confidence_thresh=confidence_thresh,
+    )
+
